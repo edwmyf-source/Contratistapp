@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CONTRATISTAPP — Honorarios vs Salario</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<style>
+html,body{font-family:'Poppins',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;background:linear-gradient(135deg,#f8fafc,#eef4fb);margin:0;color:#0f172a;scroll-behavior:smooth;}
+.card{border-radius:1rem;box-shadow:0 10px 30px rgba(14,30,37,0.06);}
+.tab-btn{transition:all .2s;}
+.tab-btn.active{background:#dbeafe;color:#1e3a8a;font-weight:600;}
+#splash{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#1E3A8A;color:white;z-index:50;overflow:hidden;}
+#shooting-star{position:absolute;top:-10%;left:-10%;width:4px;height:100px;background:linear-gradient(45deg,rgba(255,255,255,0.8),transparent);transform:rotate(45deg);animation:shoot 2s linear infinite;}
+@keyframes shoot{0%{transform:translate(-100%,-100%) rotate(45deg);}50%{transform:translate(200%,200%) rotate(45deg);}100%{transform:translate(-100%,-100%) rotate(45deg);}}
+@keyframes fadeZoom {0% {opacity: 0; transform: scale(0.8);}60% {opacity: 1; transform: scale(1.05);}100% {opacity: 1; transform: scale(1);}}
+.animate-fadeZoom { animation: fadeZoom 1.8s ease-in-out both; }
+.spinner { border:6px solid #e5e7eb; border-top:6px solid #2563EB;width:50px;height:50px;border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin { to {transform: rotate(360deg);} }
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #2563eb;
+  font-weight: 600;
+  animation: pulse 1s ease-in-out infinite;
+}
+.loading-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: #2563eb;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite;
+}
+.loading-dot:nth-child(1) { animation-delay: 0s; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  0%, 80%, 100% { opacity: 0.3; }
+  40% { opacity: 1; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ESTILOS PARA PASOS */
+.paso-container {
+  border-left: 4px solid #1e3a8a;
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+.paso-numero {
+  position: absolute;
+  left: -15px;
+  top: 0;
+  width: 30px;
+  height: 30px;
+  background: #dbeafe;
+  border: 3px solid #1e3a8a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #1e3a8a;
+  font-size: 0.9rem;
+}
+.paso-titulo {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e3a8a;
+  margin-bottom: 0.5rem;
+}
+.paso-descripcion {
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+/* SCROLL HORIZONTAL PARA PESTAÑAS - MOBILE FRIENDLY */
+#tab-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+#tab-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+#tab-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+#tab-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+#tab-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Asegurar que el nav dentro no se envuelva */
+#tabs {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  display: flex;
+}
+
+/* Asegurar que cada botón tenga tamaño mínimo */
+.tab-btn {
+  flex-shrink: 0;
+  min-width: fit-content;
+}
+</style>
+</head>
+<body class="min-h-screen text-gray-800">
+
+<!-- Splash -->
+<div id="splash">
+  <div id="shooting-star"></div>
+  <div class="relative z-10 animate-fadeZoom flex flex-col items-center">
+    <div class="relative flex items-center justify-center w-56 h-56 rounded-full bg-blue-900 shadow-[0_0_50px_rgba(255,255,255,0.2)]">
+      <div class="absolute inset-0 rounded-full border-4 border-blue-400/40 blur-sm"></div>
+      <svg width="84" height="84" viewBox="0 0 84 84" xmlns="http://www.w3.org/2000/svg" class="relative z-10">
+        <circle cx="42" cy="42" r="40" fill="#1E3A8A"/>
+        <rect x="26" y="22" width="32" height="40" rx="6" fill="white"/>
+        <rect x="32" y="28" width="8" height="8" rx="2" fill="#1E3A8A"/>
+        <rect x="44" y="28" width="8" height="8" rx="2" fill="#1E3A8A"/>
+        <rect x="32" y="40" width="8" height="8" rx="2" fill="#1E3A8A"/>
+        <rect x="44" y="40" width="8" height="8" rx="2" fill="#1E3A8A"/>
+        <circle cx="42" cy="64" r="4" fill="#FFD700">
+          <animate attributeName="r" values="3;5;3" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+      <div class="absolute bottom-4 flex flex-col items-center z-10">
+        <h1 class="text-white font-bold text-xl tracking-wide">CONTRATISTAPP</h1>
+        <p class="text-blue-200 text-xs">Honorarios vs Salario</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<header class="w-full bg-blue-800/90 backdrop-blur-md shadow-lg sticky top-0 z-40 hidden" id="header">
+  <div class="max-w-6xl mx-auto flex items-center justify-between p-4">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
+        <svg width="32" height="32" viewBox="0 0 84 84" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="42" cy="42" r="40" fill="#1E3A8A"/>
+          <rect x="26" y="22" width="32" height="40" rx="6" fill="white"/>
+          <rect x="32" y="28" width="8" height="8" rx="2" fill="#1E3A8A"/>
+          <rect x="44" y="28" width="8" height="8" rx="2" fill="#1E3A8A"/>
+          <rect x="32" y="40" width="8" height="8" rx="2" fill="#1E3A8A"/>
+          <rect x="44" y="40" width="8" height="8" rx="2" fill="#1E3A8A"/>
+        </svg>
+      </div>
+      <div>
+        <div class="text-white font-bold text-2xl tracking-wide leading-none">CONTRATISTAPP</div>
+        <div class="text-blue-200 text-xs uppercase tracking-widest">Honorarios vs Salario</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-6 pb-20 hidden" id="main">
+  <div class="bg-white card rounded-lg mb-6" id="tab-container">
+    <nav class="flex gap-2 p-3" id="tabs">
+      <button class="tab-btn px-4 py-2 rounded-lg active" data-tab="instrucciones" style="font-size:0.95rem;">📖 Instrucciones</button>
+      <button class="tab-btn px-4 py-2 rounded-lg" data-tab="calc">💵 Salario vs Honorario</button>
+      <button class="tab-btn px-4 py-2 rounded-lg" data-tab="anio">📆 Mi año como contratista</button>
+      <button class="tab-btn px-4 py-2 rounded-lg" data-tab="productos">📦 Productos de interés</button>
+    </nav>
+  </div>
+
+  <!-- PESTAÑA DE INSTRUCCIONES -->
+  <section id="instrucciones" class="tab-panel">
+    <div class="card bg-white p-8 max-w-5xl mx-auto">
+      <h2 class="text-2xl font-bold mb-8" style="color:#1E3A8A;">📖 Cómo usar CONTRATISTAPP</h2>
+
+      <div class="space-y-8">
+        <div class="flex gap-6">
+          <div class="flex-shrink-0">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color:#dbeafe;">
+              <span class="text-lg font-bold" style="color:#1E3A8A;">1</span>
+            </div>
+          </div>
+          <div class="flex-grow">
+            <h3 class="text-lg font-semibold mb-2">📖 Selecciona la pestaña que necesitas</h3>
+            <p class="text-gray-600 mb-3">Tenemos 3 herramientas disponibles:</p>
+            <ul class="list-disc list-inside text-gray-600 space-y-2">
+              <li><strong>💵 Comparativa Mensual:</strong> Calcula valores mes a mes entre un contrato de prestación de servicios y uno laboral indefinido.</li>
+              <li><strong>📆 Mi año como contratista:</strong> Análisis detallado de 12 meses con gráficos comparativos para ver variaciones a lo largo del año.</li>
+              <li><strong>📦 Productos de interés:</strong> Acceso a productos y servicios recomendados.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="flex gap-6">
+          <div class="flex-shrink-0">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color:#dbeafe;">
+              <span class="text-lg font-bold" style="color:#1E3A8A;">2</span>
+            </div>
+          </div>
+          <div class="flex-grow">
+            <h3 class="text-lg font-semibold mb-2">💰 Ingresa tu ingreso base</h3>
+            <p class="text-gray-600 mb-3">En la pestaña seleccionada encontrarás un campo para ingresar:</p>
+            <ul class="list-disc list-inside text-gray-600 space-y-2">
+              <li>El valor del ingreso que deseas comparar</li>
+              <li>El nivel de ARL (Seguro de riesgos laborales)</li>
+              <li>El SMMLV (Salario Mínimo Vigente) si deseas personalizarlo</li>
+            </ul>
+            <p class="text-gray-600 mt-3">El sistema calculará automáticamente el equivalente en el otro tipo de contrato.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-6">
+          <div class="flex-shrink-0">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color:#dbeafe;">
+              <span class="text-lg font-bold" style="color:#1E3A8A;">3</span>
+            </div>
+          </div>
+          <div class="flex-grow">
+            <h3 class="text-lg font-semibold mb-2">⚙️ Presiona "Calcular"</h3>
+            <p class="text-gray-600 mb-3">El sistema procesará:</p>
+            <ul class="list-disc list-inside text-gray-600 space-y-2">
+              <li>SMMLV (Salario Mínimo Mensual Legal Vigente)</li>
+              <li>Aporte a ARL (Riesgos laborales)</li>
+              <li>Aporte a pensión y salud</li>
+              <li>Retenciones y deducciones aplicables</li>
+            </ul>
+            <p class="text-gray-600 mt-3">Verás un indicador de carga (spinner) mientras se realiza el cálculo.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-6">
+          <div class="flex-shrink-0">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color:#dbeafe;">
+              <span class="text-lg font-bold" style="color:#1E3A8A;">4</span>
+            </div>
+          </div>
+          <div class="flex-grow">
+            <h3 class="text-lg font-semibold mb-2">📊 Revisa los resultados</h3>
+            <p class="text-gray-600 mb-3">Los resultados incluyen:</p>
+            <ul class="list-disc list-inside text-gray-600 space-y-2">
+              <li>Tabla comparativa detallada</li>
+              <li>Gráficos visuales (en la pestaña anual)</li>
+              <li>Cálculo del ingreso equivalente</li>
+              <li>Desglose de aportes y deducciones</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="flex gap-6">
+          <div class="flex-shrink-0">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color:#dbeafe;">
+              <span class="text-lg font-bold" style="color:#1E3A8A;">5</span>
+            </div>
+          </div>
+          <div class="flex-grow">
+            <h3 class="text-lg font-semibold mb-2">📥 Descarga o comparte</h3>
+            <p class="text-gray-600 mb-3">Una vez obtengas los resultados puedes:</p>
+            <ul class="list-disc list-inside text-gray-600 space-y-2">
+              <li><strong>Descargar PDF:</strong> Guarda un documento con la comparativa para compartir o archivar</li>
+              <li><strong>Limpiar formulario:</strong> Realiza nuevas comparaciones con otros valores</li>
+              <li><strong>Cambiar de pestaña:</strong> Prueba otras herramientas de comparación</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-10 p-6 rounded-lg border-l-4" style="border-color:#1E3A8A;background-color:#f0f9ff;">
+        <p class="text-sm text-gray-700"><strong>💡 Nota:</strong> Los resultados son <strong>valores aproximados</strong> y de carácter <strong>informativo</strong>. Consulta con un especialista en nómina para cálculos definitivos.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PESTAÑA 2: Comparativa Mensual con PASOS -->
+  <section id="calc" class="tab-panel hidden">
+    <div class="text-center max-w-3xl mx-auto mb-8">
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-900">💵 Comparativa Mensual</h2>
+      <p class="text-gray-600 mt-2">Sigue los pasos para comparar tus ingresos</p>
+    </div>
+    <div class="card bg-white p-6 max-w-3xl mx-auto">
+
+      <!-- PASO 1 -->
+      <div class="paso-container">
+        <div class="paso-numero">1</div>
+        <div class="paso-titulo">Selecciona el tipo de contrato (base)</div>
+        <div class="paso-descripcion mb-2">Elige con cuál tipo de contrato quieres comenzar la comparación</div>
+        <select id="tipoContrato" class="w-full border rounded-lg p-2">
+          <option value="servicios">Prestación de servicios (honorarios)</option>
+          <option value="laboral">Contrato laboral</option>
+        </select>
+      </div>
+
+      <!-- PASO 2 -->
+      <div class="paso-container">
+        <div class="paso-numero">2</div>
+        <div class="paso-titulo">Especifica el nivel de ARL</div>
+        <div class="paso-descripcion mb-2">Solo aplica para prestación de servicios. Selecciona tu clasificación de riesgo</div>
+        <select id="arlNivel" class="w-full border rounded-lg p-2">
+          <option value="1">I (0.52%)</option>
+          <option value="2">II (1.04%)</option>
+          <option value="3">III (2.44%)</option>
+          <option value="4">IV (4.35%)</option>
+          <option value="5">V (6.96%)</option>
+        </select>
+      </div>
+
+      <!-- PASO 3 -->
+      <div class="paso-container">
+        <div class="paso-numero">3</div>
+        <div class="paso-titulo">Configura el Salario Mínimo (SMMLV)</div>
+        <div class="paso-descripcion mb-2">Personaliza el valor según tu referencia</div>
+        <input id="salarioMinimo" inputmode="numeric" class="w-full border rounded-lg p-2 text-right" value="$1.426.500">
+      </div>
+
+      <!-- PASO 4 -->
+      <div class="paso-container">
+        <div class="paso-numero">4</div>
+        <div class="paso-titulo">Ingresa tu ingreso mensual</div>
+        <div class="paso-descripcion mb-2">Escribe el valor que deseas comparar</div>
+        <input id="ingreso" inputmode="numeric" placeholder="$0" class="w-full border rounded-lg p-2 text-right">
+      </div>
+
+      <!-- PASO 5: BOTÓN CALCULAR -->
+      <div class="paso-container">
+        <div class="paso-numero">5</div>
+        <div class="paso-titulo">¡Listo para calcular!</div>
+        <div class="paso-descripcion mb-4">Presiona el botón para ver los resultados</div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <button id="btnCalcular" class="col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-lg text-lg">✓ Paso 5: Calcular equivalencia</button>
+          <button id="btnLimpiar" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold p-3 rounded-lg">Limpiar</button>
+        </div>
+      </div>
+
+      <p class="text-xs text-gray-500 mt-4">Introduce el ingreso del contrato base. La aplicación calculará automáticamente el ingreso equivalente del contrato contrario para igualar el <strong>TOTAL AL MES</strong>.</p>
+    </div>
+    <div id="overlay" class="hidden fixed inset-0 bg-black/30 z-40 flex items-center justify-center">
+      <div class="bg-white p-6 rounded-xl text-center">
+        <div class="spinner mx-auto"></div>
+        <p class="mt-2 text-gray-700 font-medium">Calculando equivalencia...</p>
+      </div>
+    </div>
+    <div id="sectionResult" class="hidden mt-8 card bg-white p-6 max-w-5xl mx-auto">
+      <p id="frase" class="border-l-4 border-blue-600 pl-4 py-2 text-gray-700 font-medium"></p>
+      <div class="overflow-x-auto mt-4">
+        <table class="w-full text-sm" id="tablaResultados">
+          <thead class="bg-blue-50">
+            <tr><th class="p-2 text-left">Concepto</th><th class="p-2 text-right">Prestación de servicios</th><th class="p-2 text-right">Contrato laboral</th></tr>
+          </thead>
+          <tbody class="divide-y"></tbody>
+        </table>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button id="btnPDF" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold">📥 Descargar PDF</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PESTAÑA 3: Análisis Anual con PASOS -->
+  <section id="anio" class="tab-panel hidden">
+    <div class="text-center max-w-3xl mx-auto mb-8">
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-900">📆 Mi año como contratista</h2>
+      <p class="text-gray-600 mt-2">Sigue los pasos para analizar tu año completo</p>
+    </div>
+    <div class="card mb-6">
+
+      <!-- PASO 1 -->
+      <div class="paso-container p-6">
+        <div class="paso-numero">1</div>
+        <div class="paso-titulo">Selecciona el nivel de ARL</div>
+        <div class="paso-descripcion mb-2">Elige tu clasificación de riesgo laboral</div>
+        <select id="anioArlNivel" class="w-full border rounded-lg p-2">
+          <option value="1">I (0.522%)</option>
+          <option value="2" selected>II (1.044%)</option>
+          <option value="3">III (2.436%)</option>
+          <option value="4">IV (4.350%)</option>
+          <option value="5">V (6.960%)</option>
+        </select>
+      </div>
+
+      <!-- PASO 2 -->
+      <div class="paso-container p-6 border-t">
+        <div class="paso-numero">2</div>
+        <div class="paso-titulo">Configura el SMMLV</div>
+        <div class="paso-descripcion mb-2">Personaliza el valor según tu referencia</div>
+        <input id="anioSmmlv" class="w-full border rounded-lg p-2 text-right" value="$1.426.500">
+      </div>
+
+      <!-- PASO 3 -->
+      <div class="paso-container p-6 border-t">
+        <div class="paso-numero">3</div>
+        <div class="paso-titulo">Ingresa tus ingresos mensuales</div>
+        <div class="paso-descripcion mb-3">Escribe cuánto ganaste por HONORARIOS en cada mes</div>
+        <table class="w-full text-sm mb-4 border-collapse rounded-lg overflow-hidden" id="anioTableRows">
+          <thead class="bg-blue-100 text-blue-900 font-semibold text-left">
+            <tr>
+              <th class="p-3">Mes</th>
+              <th class="p-3 text-right">Honorarios (COP)</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-blue-100">
+          </tbody>
+        </table>
+
+        <style>
+          #anioTableRows tr:nth-child(odd) {
+            background-color: #f1f5f9;
+          }
+          #anioTableRows tr:nth-child(even) {
+            background-color: #ffffff;
+          }
+          #anioTableRows td {
+            padding: 0.6rem 0.75rem;
+            vertical-align: middle;
+          }
+          #anioTableRows input.anioMoney {
+            width: 100%;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            padding: 0.45rem 0.6rem;
+            background-color: #f8fafc;
+            text-align: right;
+            transition: all 0.2s ease-in-out;
+          }
+          #anioTableRows input.anioMoney:focus {
+            border-color: #2563eb;
+            background-color: #eef2ff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+            outline: none;
+          }
+        </style>
+      </div>
+
+      <!-- PASO 4: BOTÓN CALCULAR -->
+      <div class="paso-container p-6 border-t">
+        <div class="paso-numero">4</div>
+        <div class="paso-titulo">¡Listo para analizar!</div>
+        <div class="paso-descripcion mb-4">Presiona el botón para calcular tu equivalencia anual</div>
+        <div class="flex gap-2 mb-4 flex-wrap">
+          <button id="anioBtnCalcular" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-semibold text-lg">✓ Paso 4: Calcular equivalencia</button>
+          <button id="anioBtnPDF" class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-semibold">📥 Descargar PDF</button>
+          <div id="anioLoadingIndicator" class="hidden loading-indicator">
+            <span class="loading-dot"></span>
+            <span class="loading-dot"></span>
+            <span class="loading-dot"></span>
+            <span>Calculando...</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="anioResults" class="card hidden">
+      <div id="anioSummaryText" class="border-l-4 border-blue-600 p-4 mb-4 font-semibold text-blue-900"></div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="card p-3"><canvas id="anioChartPS"></canvas></div>
+        <div class="card p-3"><canvas id="anioChartLB"></canvas></div>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4 mt-4">
+        <div class="card p-3"><table id="anioTablePS"></table></div>
+        <div class="card p-3"><table id="anioTableLB"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PESTAÑA 4: Productos de interés -->
+  <section id="productos" class="tab-panel hidden">
+    <div class="card bg-white p-6 max-w-6xl mx-auto">
+      <h2 class="text-2xl font-bold text-blue-800 mb-4 text-center">Productos de interés para contratistas</h2>
+      <div id="publicidad-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      <p class="text-sm text-gray-400 mt-3 text-center">Publicidad dinámica conectada con Google Sheets</p>
+    </div>
+  </section>
+
+<script>
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1PIrnld2I45i7giZpImQ2mjGyBi9hIQ3FA9HdArN-B3o/export?format=csv&gid=0';
+
+function csvToArray(data) {
+  const rows = data.trim().split('\n');
+  return rows.map(r => r.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)?.map(f => f.replace(/^"|"$/g, '')) || []);
+}
+
+async function loadPublicidad() {
+  const res = await fetch(SHEET_CSV_URL);
+  const text = await res.text();
+  const arr = csvToArray(text);
+  const headers = arr[0].map(e => e.trim().toLowerCase());
+  const activos = arr.slice(1).filter(row => row[headers.indexOf('activo')]?.trim().toLowerCase() === 'si');
+
+  document.getElementById('publicidad-container').innerHTML = activos.map(row => `
+    <a href="${row[headers.indexOf('url')]}" target="_blank" class="border p-3 rounded-lg shadow transition hover:shadow-lg flex flex-col items-center bg-white">
+      <img src="${row[headers.indexOf('imagen')]}" alt="${row[headers.indexOf('titulo')]}" class="h-28 object-contain mb-2">
+      <h3 class="font-bold text-lg mb-1 text-blue-900">${row[headers.indexOf('titulo')]}</h3>
+      <p class="text-gray-600 text-sm mb-2">${row[headers.indexOf('descripción')]}</p>
+      <span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">${row[headers.indexOf('etiqueta')]}</span>
+    </a>
+  `).join('');
+}
+
+loadPublicidad();
+</script>
+
+</main>
+
+<footer class="text-center text-gray-500 text-sm py-6 hidden" id="footer">
+  <p>© CONTRATISTAPP — estimaciones informativas para Colombia.</p>
+  <p><a href="mailto:edwmyf@gmail.com" style="color:#3b82f6;text-decoration:none;font-weight:500;">edwmyf@gmail.com</a></p>
+</footer>
+
+<script>
+// Splash
+setTimeout(()=>{
+  document.getElementById('splash').style.opacity='0';
+  setTimeout(()=>{['header','main','footer'].forEach(id=>document.getElementById(id).classList.remove('hidden'));document.getElementById('splash').style.display='none';},600);
+},2000);
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.add('hidden'));
+    document.getElementById(btn.dataset.tab).classList.remove('hidden');
+  });
+});
+
+// -------------------- PESTAÑA 1 (Comparativa Mensual) --------------------
+const num=s=>Number(String(s).replace(/[^0-9]/g,''))||0;
+const COP=v=>'$'+Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+const ARL=[0.0052,0.0104,0.0244,0.0435,0.0696];
+function calcServ(h,arl){let ibc=h*0.4, sa=ibc*0.125, pe=ibc*0.125, ar=ibc*(ARL[arl-1]||0); return {ing:h,ibc,s:-sa,p:-pe,arl:-ar,total:h-(sa+pe+ar)};}; 
+function calcLab(s){let ibc=s, sa=ibc*0.04, pe=ibc*0.04, pr=ibc*0.0833, ce=ibc*0.0833, ic=ibc*0.01, va=ibc*0.041666; return {ing:s,ibc,s:-sa,p:-pe,pr,ce,ic,va,total:s-(sa+pe)+pr+ce+ic+va};};
+function buscar(base,t,a,sm){let lo=0,hi=base*3; for(let i=0;i<300;i++){let m=(lo+hi)/2;let tot=t==='lab'? calcLab(m).total : calcServ(m,a).total; if(tot>base) hi=m; else lo=m;} return lo;};
+const ingreso=document.getElementById("ingreso"),smmlv=document.getElementById("salarioMinimo");
+[ingreso,smmlv].forEach(i=> i.addEventListener("input",()=>i.value=COP(num(i.value))));
+document.getElementById("btnCalcular").onclick=()=>{let v=num(ingreso.value);if(!v)return alert("Ingrese valor válido");
+  overlay.classList.remove("hidden");
+  setTimeout(()=>{
+    let sm=num(smmlv.value)||1426500;let ar=parseInt(arlNivel.value);
+    if(tipoContrato.value==="servicios"){let s=calcServ(v,ar), eq=buscar(s.total,'lab',ar,sm), l=calcLab(eq);
+      frase.innerHTML=`Para igualar un ingreso neto de <strong>${COP(s.total)}</strong> con prestación de servicios (ingreso: <strong>${COP(v)}</strong>), el salario equivalente sería <strong>${COP(eq)}</strong>.`;
+      pintarTabla(s,l);
+    }else{let l=calcLab(v), eq=buscar(l.total,'s',ar,sm), s=calcServ(eq,ar);
+      frase.innerHTML=`Para igualar un ingreso neto de <strong>${COP(l.total)}</strong> con contrato laboral (salario: <strong>${COP(v)}</strong>), el honorario equivalente sería <strong>${COP(eq)}</strong>.`;
+      pintarTabla(s,l);}
+    sectionResult.classList.remove("hidden");
+    setTimeout(()=>{
+      document.getElementById('sectionResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 200);
+    overlay.classList.add("hidden");
+  },350);
+};
+function pintarTabla(s,l){
+  tablaResultados.querySelector("tbody").innerHTML="";
+  let rows=[["Ingreso",s.ing,l.ing],["IBC",s.ibc,l.ibc],["Salud",s.s,l.s],["Pensión",s.p,l.p],["ARL",s.arl,0],["Prima",0,l.pr],["Cesantías",0,l.ce],["Intereses Cesantías",0,l.ic],["Vacaciones",0,l.va],["TOTAL AL MES",s.total,l.total]];
+  rows.forEach(r=>{tablaResultados.querySelector("tbody").innerHTML+=`<tr class="${r[0]==='TOTAL AL MES'?'font-bold bg-blue-50':''}"><td class="p-2">${r[0]}</td><td class="p-2 text-right">${COP(r[1])}</td><td class="p-2 text-right">${COP(r[2])}</td></tr>`;});
+};
+document.getElementById("btnPDF").onclick=async()=>{const card=document.getElementById("sectionResult");const canvas=await html2canvas(card,{scale:2});
+  const img=canvas.toDataURL('image/png');const {jsPDF}=window.jspdf;const pdf=new jsPDF();
+  const w=pdf.internal.pageSize.getWidth();const h=(canvas.height*w)/canvas.width;pdf.addImage(img,'PNG',0,10,w,h);pdf.save("resultado_equivalencia.pdf");};
+btnLimpiar.onclick=()=>{ingreso.value="";sectionResult.classList.add("hidden");};
+
+// -------------------- PESTAÑA 2 (Análisis Anual) --------------------
+const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const ARL2={1:0.00522,2:0.01044,3:0.02436,4:0.0435,5:0.0696};
+function fmt(n){n=Number(n)||0;return'$'+n.toLocaleString('es-CO');};
+function parseMoney(v){let s=(v||"").toString().replace(/[^0-9]/g,''); return Number(s)||0;};
+function buildInputs(){let rows=''; meses.forEach((m,i)=>{rows+=`<tr><td>${m}</td><td class="text-right"><input class="anioMoney" data-i="${i}" placeholder="$0"></td></tr>`;}); document.getElementById('anioTableRows').querySelector('tbody').innerHTML=rows;
+  document.querySelectorAll('.anioMoney').forEach(inp=>{inp.onfocus=e=>e.target.value=parseMoney(e.target.value)||''; inp.onblur=e=>e.target.value=fmt(parseMoney(e.target.value));});};
+buildInputs();
+function detallePSAnio(ing,arlPct,sm){const ibc=ing*0.40,sa=ibc*0.125,pe=ibc*0.125,ar=ibc*arlPct,fs=(ibc>=4*sm?ibc*0.01:0);const tot=ing-(sa+pe+ar+fs);return{Ingreso:ing,IBC:ibc,Salud:-sa,Pensión:-pe,ARL:-ar,'Fondo solidaridad':-fs,'TOTAL mes':tot};};
+function detalleLBAnio(s,sm){const ibc=s; let fs=0,r=ibc/sm; if(r>=4&&r<7)fs=0.015*ibc; else if(r>=7&&r<11)fs=0.018*ibc; else if(r>=11&&r<16)fs=0.025*ibc; const sa=ibc*0.04,pe=ibc*0.04,pr=ibc*0.083333,cs=ibc*0.083333,intC=cs*0.01,v=ibc*0.041666; const tot=s-(sa+pe+fs)+pr+cs+intC+v; return{Ingreso:s,IBC:ibc,Salud:-sa,Pensión:-pe,'Fondo solidaridad':-fs,Prima:pr,'Cesantías':cs,'Intereses cesantías':intC,Vacaciones:v,'TOTAL mes':tot};};
+let chartPSAnio, chartLBAnio;
+function destroy2(ch){try{ch.destroy()}catch{}};
+
+document.getElementById('anioBtnCalcular').onclick=()=>{
+  const sm=parseMoney(document.getElementById('anioSmmlv').value)||1426500;
+  const arlPct=ARL2[document.getElementById('anioArlNivel').value];
+  const ingresos=[...document.querySelectorAll('.anioMoney')].map(i=>parseMoney(i.value));
+  if(ingresos.every(v=>v<=0)){alert("Ingresa al menos 1 mes con dinero"); return;};
+
+  const loadingIndicator=document.getElementById('anioLoadingIndicator');
+  loadingIndicator.classList.remove('hidden');
+
+  setTimeout(()=>{
+    const netPS=ingresos.map(v=>v>0?detallePSAnio(v,arlPct,sm)['TOTAL mes']:0);
+    const netAn=netPS.reduce((a,b)=>a+b,0);
+    const prom=netAn/12;
+    let low=0,high=prom*25+2000000;
+    for(let i=0;i<300;i++){const mid=(low+high)/2; const net=detalleLBAnio(mid,sm)['TOTAL mes']; if(net>prom)high=mid; else low=mid;};
+    const salEq=(low+high)/2;
+    const detLB=detalleLBAnio(salEq,sm);
+    const netLabArr=Array(12).fill(detLB['TOTAL mes']);
+    document.getElementById('anioSummaryText').innerHTML = `✅ Neto anual (Prestación de servicios): <strong>${fmt(netAn)}</strong><br>✅ Promedio mensual (÷12): <strong>${fmt(prom)}</strong><br>✅ Salario laboral equivalente mensual: <strong>${fmt(salEq)}</strong><br>`;
+    function buildTable2(id,data){let html='';Object.entries(data).forEach(([k,v])=>{if(k!=='TOTAL mes')html+=`<tr><td>${k}</td><td class="text-right">${fmt(v)}</td></tr>`;}); html+=`<tr style="font-weight:700;border-top:1px solid #e6e8ec"><td>TOTAL mes</td><td class="text-right">${fmt(data['TOTAL mes'])}</td></tr>`; document.querySelector(id).innerHTML=html;};
+    buildTable2('#anioTablePS',detallePSAnio(ingresos.reduce((a,b)=>a+b,0)/12,arlPct,sm));
+    buildTable2('#anioTableLB',detLB);
+    destroy2(chartPSAnio); destroy2(chartLBAnio);
+    chartPSAnio = new Chart(document.getElementById('anioChartPS'), {
+    type: 'bar',
+    data: {
+      labels: meses,
+      datasets: [{
+        label: 'Ingreso (Prestación de servicios)',
+        data: netPS,
+        backgroundColor: '#0ea5a4'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: '#0f172a', font: { size: 12, weight: '600' } }
+        }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { callback: v => fmt(v) } }
+      }
+    }
+  });
+
+  chartLBAnio = new Chart(document.getElementById('anioChartLB'), {
+    type: 'bar',
+    data: {
+      labels: meses,
+      datasets: [{
+        label: 'Ingreso equivalente (Contrato laboral)',
+        data: netLabArr,
+        backgroundColor: '#003366'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: '#0f172a', font: { size: 12, weight: '600' } }
+        }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { callback: v => fmt(v) } }
+      }
+    }
+  });
+
+    document.getElementById('anioResults').classList.remove('hidden');
+    loadingIndicator.classList.add('hidden');
+
+    setTimeout(()=>{
+      document.getElementById('anioResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+
+  }, 1000);
+};
+
+document.getElementById('anioBtnPDF').onclick=async()=>{
+  const res=document.getElementById('anioResults'); if(res.style.display==='none'){alert("Primero calcula"); return;};
+  const canvas=await html2canvas(res,{scale:2});
+  const img=canvas.toDataURL("image/png"); const{jsPDF}=window.jspdf; const pdf=new jsPDF("p","pt","a4"),w=pdf.internal.pageSize.getWidth(); const m=20,iw=w-m*2,ih=(canvas.height*iw)/canvas.width; pdf.addImage(img,"PNG",m,40,iw,ih); pdf.save("equivalencia_laboral.pdf");
+};
+
+</script>
+<script>
+// ==================== GOOGLE SHEETS TRACKING ====================
+function registrarEvento(accion, detalle) {
+  fetch("https://script.google.com/macros/s/AKfycbwv73jXxBchp-c_ffiAeOuyK5HV4aRuYabcPqRMhLuzy9RCRjx3SvAdymc2umnpFgUg/exec", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      accion: accion,
+      detalle: detalle,
+      device: navigator.userAgent,
+      page: location.href
+    })
+  });
+}
+
+// Registrar uso de botones Calcular - PESTAÑA 1 (Comparativa Mensual)
+document.getElementById("btnCalcular")?.addEventListener("click", function() {
+  registrarEvento("calcular_equivalencia", "Comparativa Mensual");
+});
+
+// Registrar uso de botones Calcular - PESTAÑA 3 (Análisis Anual)
+document.getElementById("anioBtnCalcular")?.addEventListener("click", function() {
+  registrarEvento("calcular_anual", "Comparativa Anual");
+});
+// ================================================================
+</script>
+
+</body>
+</html>
